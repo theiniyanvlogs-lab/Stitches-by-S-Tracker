@@ -1,12 +1,20 @@
-// 🔥 FIREBASE CONFIGURATION
-// Replace with your Firebase project config
+// 🔥 FIREBASE CONFIGURATION - Stitches by S
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY_HERE",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyDopqJIc9mAlNquX2IcHdD99WyRIm-zExU",
+    authDomain: "stitches-by-s.firebaseapp.com",
+    projectId: "stitches-by-s",
+    storageBucket: "stitches-by-s.appspot.com",
+    messagingSenderId: "924439808583",
+    appId: "1:924439808583:web:ba328fa2bce670cad4bf62"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+console.log("✅ Firebase initialized for Stitches by S!");
+console.log("📊 Project ID:", firebaseConfig.projectId);
+
 };
 
 // Initialize Firebase
