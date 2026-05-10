@@ -51,6 +51,20 @@ body {
     transform: scale(1.03); /* Gentle zoom */
 }
 
+/* Tablet */
+@media (max-width: 768px) {
+    .main-logo {
+        max-width: 350px; /* Increased for tablet */
+    }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    .main-logo {
+        max-width: 280px; /* Increased for mobile */
+    }
+}
+
 /* Fallback text logo (hidden by default) */
 .logo-fallback {
     display: none;
