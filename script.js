@@ -37,6 +37,12 @@ function setupEventListeners() {
     document.getElementById('pdfReportBtn').addEventListener('click', generatePDFReport);
     document.getElementById('clearBtn').addEventListener('click', clearAllData);
     document.getElementById('exportBtn').addEventListener('click', exportData);
+    
+    // New feature listeners
+    document.getElementById('previewBtn').addEventListener('click', showPreview);
+    document.getElementById('restoreBtn').addEventListener('click', () => document.getElementById('restoreFileInput').click());
+    document.getElementById('restoreFileInput').addEventListener('change', handleFileRestore);
+    document.getElementById('saveEditBtn').addEventListener('click', saveEditedTransaction);
 }
 
 // Add transaction
@@ -70,7 +76,7 @@ async function addTransaction(e) {
     }
 }
 
-// ✅ FIXED: Load transactions - Sort in JavaScript to avoid Firestore index requirement
+// Load transactions - Sort in JavaScript to avoid Firestore index requirement
 async function loadTransactions() {
     updateSyncStatus('🔄 Loading...', '');
     console.log('Loading transactions for user:', userEmail);
@@ -85,7 +91,6 @@ async function loadTransactions() {
         console.log('🔍 Querying Firestore for userEmail:', userEmail);
         
         // Query without orderBy to avoid composite index requirement
-        // We'll sort in JavaScript instead
         const snapshot = await db.collection('transactions')
             .where('userEmail', '==', userEmail)
             .get();
@@ -115,7 +120,6 @@ async function loadTransactions() {
     } catch (err) {
         console.error('❌ Error loading transactions:', err);
         
-        // Check for index requirement error
         if (err.message && err.message.includes('index')) {
             updateSyncStatus('⚠️ Index required - check console for link', 'error');
             console.log('🔗 Create index here:', err.message);
@@ -126,7 +130,7 @@ async function loadTransactions() {
     }
 }
 
-// Render transactions
+// Render transactions with Edit buttons
 function renderTransactions(data = transactions) {
     const list = document.getElementById('transactionsList');
     
@@ -144,9 +148,14 @@ function renderTransactions(data = transactions) {
             <div class="transaction-amount">
                 ${t.type === 'income' ? '+' : '-'}₹${t.amount.toFixed(2)}
             </div>
-            <button class="btn-delete" onclick="deleteTransaction('${t.id}')">
-                <i class="fas fa-trash"></i>
-            </button>
+            <div class="transaction-actions">
+                <button class="btn-edit" onclick="openEditModal('${t.id}')">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-delete" onclick="deleteTransaction('${t.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
         </div>
     `).join('');
 }
@@ -170,6 +179,206 @@ async function deleteTransaction(id) {
         console.error('Error deleting:', err);
         updateSyncStatus('❌ Delete failed', 'error');
         alert('Failed to delete transaction.');
+    }
+}
+
+// ================= NEW FEATURES =================
+
+// 1. EDIT TRANSACTION FUNCTIONS
+
+function openEditModal(id) {
+    const transaction = transactions.find(t => t.id === id);
+    if (!transaction) return;
+    
+    document.getElementById('editId').value = transaction.id;
+    document.getElementById('editType').value = transaction.type;
+    document.getElementById('editAmount').value = transaction.amount;
+    document.getElementById('editCategory').value = transaction.category;
+    document.getElementById('editDate').value = transaction.date;
+    document.getElementById('editDescription').value = transaction.description;
+    
+    document.getElementById('editModal').style.display = 'flex';
+}
+
+async function saveEditedTransaction() {
+    const id = document.getElementById('editId').value;
+    
+    const updatedData = {
+        type: document.getElementById('editType').value,
+        amount: parseFloat(document.getElementById('editAmount').value),
+        category: document.getElementById('editCategory').value,
+        date: document.getElementById('editDate').value,
+        description: document.getElementById('editDescription').value.trim(),
+        updatedAt: new Date().toISOString()
+    };
+    
+    try {
+        updateSyncStatus('💾 Updating...', '');
+        await db.collection('transactions').doc(id).update(updatedData);
+        
+        // Update local array
+        const index = transactions.findIndex(t => t.id === id);
+        if (index !== -1) {
+            transactions[index] = { ...transactions[index], ...updatedData };
+            renderTransactions();
+            updateSummary();
+        }
+        
+        closeModal('editModal');
+        updateSyncStatus('✅ Transaction updated!', 'synced');
+        setTimeout(() => updateSyncStatus('✅ Live synced', 'synced'), 2000);
+    } catch (err) {
+        console.error('Error updating:', err);
+        updateSyncStatus('❌ Update failed', 'error');
+        alert('Failed to update transaction.');
+    }
+}
+
+// 2. PREVIEW SUMMARY FUNCTION
+
+function showPreview() {
+    const incomeTotal = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    const expenseTotal = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    
+    // Calculate category breakdown
+    const categories = {};
+    transactions.forEach(t => {
+        if (!categories[t.category]) categories[t.category] = { income: 0, expense: 0 };
+        if (t.type === 'income') categories[t.category].income += t.amount;
+        else categories[t.category].expense += t.amount;
+    });
+    
+    let categoryHTML = '<div class="category-list">';
+    for (const [cat, val] of Object.entries(categories)) {
+        const net = val.income - val.expense;
+        categoryHTML += `
+            <div class="category-item">
+                <span>${cat}</span>
+                <span class="net-amount ${net >= 0 ? 'income' : 'expense'}">₹${net.toFixed(2)}</span>
+            </div>
+        `;
+    }
+    categoryHTML += '</div>';
+    
+    document.getElementById('previewContent').innerHTML = `
+        <div class="preview-summary">
+            <div class="summary-row">
+                <span>Total Income:</span>
+                <span class="income">₹${incomeTotal.toFixed(2)}</span>
+            </div>
+            <div class="summary-row">
+                <span>Total Expenses:</span>
+                <span class="expense">₹${expenseTotal.toFixed(2)}</span>
+            </div>
+            <div class="summary-row total">
+                <span>Net Profit:</span>
+                <span class="${(incomeTotal - expenseTotal) >= 0 ? 'income' : 'expense'}">₹${(incomeTotal - expenseTotal).toFixed(2)}</span>
+            </div>
+        </div>
+        <h3>Category Breakdown</h3>
+        ${categoryHTML}
+    `;
+    
+    document.getElementById('previewModal').style.display = 'flex';
+}
+
+// 3. RESTORE DATA FUNCTION
+
+function handleFileRestore(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!confirm('⚠️ This will merge the backup data with your current data. Continue?')) {
+        e.target.value = ''; // Reset file input
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        try {
+            const backupData = JSON.parse(event.target.result);
+            const dataToRestore = backupData.transactions || [];
+            
+            if (!dataToRestore.length) {
+                alert('No transactions found in file.');
+                e.target.value = '';
+                return;
+            }
+            
+            updateSyncStatus('📂 Restoring...', '');
+            
+            const batch = db.batch();
+            let count = 0;
+            
+            dataToRestore.forEach(t => {
+                const docRef = db.collection('transactions').doc();
+                batch.set(docRef, {
+                    ...t,
+                    userEmail: userEmail, // Ensure it matches current user
+                    importedAt: new Date().toISOString()
+                });
+                count++;
+            });
+            
+            await batch.commit();
+            
+            alert(`✅ Successfully restored ${count} transactions!`);
+            e.target.value = ''; // Reset file input
+            loadTransactions(); // Refresh list
+            
+        } catch (err) {
+            console.error('Restore error:', err);
+            alert('❌ Failed to restore. Make sure the file is a valid JSON export.');
+            e.target.value = '';
+        }
+    };
+    reader.readAsText(file);
+}
+
+// Export data
+function exportData() {
+    const data = {
+        userEmail: userEmail,
+        exportDate: new Date().toISOString(),
+        totalTransactions: transactions.length,
+        transactions: transactions
+    };
+    
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `stitches_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    updateSyncStatus('💾 Data exported!', 'synced');
+}
+
+// Clear all data
+async function clearAllData() {
+    if (!confirm('⚠️ Delete ALL transactions? This cannot be undone!')) return;
+    
+    try {
+        updateSyncStatus('🗑️ Clearing...', '');
+        const snapshot = await db.collection('transactions')
+            .where('userEmail', '==', userEmail)
+            .get();
+        
+        const batch = db.batch();
+        snapshot.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        
+        transactions = [];
+        renderTransactions();
+        updateSummary();
+        
+        updateSyncStatus('✅ All data cleared', 'synced');
+    } catch (err) {
+        console.error('Error clearing:', err);
+        updateSyncStatus('❌ Clear failed', 'error');
+        alert('Failed to clear data.');
     }
 }
 
@@ -271,53 +480,6 @@ function generatePDFReport() {
     updateSyncStatus('📄 PDF Report generated!', 'synced');
 }
 
-// Clear all data
-async function clearAllData() {
-    if (!confirm('⚠️ Delete ALL transactions? This cannot be undone!')) return;
-    
-    try {
-        updateSyncStatus('🗑️ Clearing...', '');
-        const snapshot = await db.collection('transactions')
-            .where('userEmail', '==', userEmail)
-            .get();
-        
-        const batch = db.batch();
-        snapshot.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-        
-        transactions = [];
-        renderTransactions();
-        updateSummary();
-        
-        updateSyncStatus('✅ All data cleared', 'synced');
-    } catch (err) {
-        console.error('Error clearing:', err);
-        updateSyncStatus('❌ Clear failed', 'error');
-        alert('Failed to clear data.');
-    }
-}
-
-// Export data
-function exportData() {
-    const data = {
-        userEmail: userEmail,
-        exportDate: new Date().toISOString(),
-        totalTransactions: transactions.length,
-        transactions: transactions
-    };
-    
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `stitches_backup_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    updateSyncStatus('💾 Data exported!', 'synced');
-}
-
 // Format date
 function formatDate(dateStr) {
     const date = new Date(dateStr);
@@ -333,4 +495,9 @@ function updateSyncStatus(msg, status) {
     const el = document.getElementById('syncStatus');
     document.getElementById('syncText').textContent = msg;
     el.className = 'sync-status ' + status;
+}
+
+// Modal helpers
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
 }
