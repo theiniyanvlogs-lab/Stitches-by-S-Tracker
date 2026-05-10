@@ -244,6 +244,37 @@ body {
     cursor: pointer;
 }
 
+/* New Date Range Filter Styles */
+.date-range-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1.5;
+}
+
+.date-range-filter input[type="date"] {
+    flex: 1;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+    width: 100%;
+}
+
+.date-range-filter input[type="date"]:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.date-separator {
+    color: #999;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
 .btn-preview, .btn-pdf {
     padding: 12px 20px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -541,6 +572,15 @@ body {
 .net-amount.expense { color: #fa709a; font-weight: 600; }
 
 /* ========== RESPONSIVE DESIGN ========== */
+@media (max-width: 1024px) {
+    /* Date range filter moves to new line on smaller tablets */
+    .date-range-filter {
+        flex-basis: 100%;
+        order: 3;
+        margin-top: 10px;
+    }
+}
+
 @media (max-width: 768px) {
     .container { padding: 20px; border-radius: 20px; }
     
@@ -561,6 +601,13 @@ body {
     .transaction-actions { width: 100%; justify-content: flex-end; }
     
     .modal-content { width: 95%; padding: 20px; }
+    
+    .date-range-filter {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .date-separator { display: none; }
 }
 
 @media (max-width: 480px) {
