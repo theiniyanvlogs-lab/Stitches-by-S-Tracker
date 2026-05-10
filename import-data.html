@@ -44,16 +44,6 @@
         .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
-        .debug { 
-            background: #f5f5f5; 
-            padding: 15px; 
-            border-radius: 5px; 
-            margin: 15px 0;
-            font-family: monospace;
-            font-size: 0.85rem;
-            max-height: 200px;
-            overflow-y: auto;
-        }
     </style>
 </head>
 <body>
@@ -62,31 +52,18 @@
         <p>This will import all <strong>35 transactions</strong> from the StitchesByS_Report_20260510.pdf</p>
         
         <div id="status"></div>
-        <div id="debugLog" class="debug" style="display: none;"></div>
         
         <div>
-            <button class="btn" id="importBtn" onclick="handleImport()">📥 Import All Transactions</button>
-            <button class="btn" id="clearBtn" onclick="clearExisting()">🗑️ Clear Existing Data First</button>
+            <button class="btn" id="importBtn" onclick="importAllTransactions()">📥 Import All Transactions</button>
+            <button class="btn" id="clearBtn" onclick="clearExistingData()">🗑️ Clear Existing Data First</button>
             <a href="index.html" class="btn" style="text-decoration: none; display: inline-block;">← Back to App</a>
         </div>
     </div>
 
     <script>
-        // Initialize Firebase
-        let db;
-        try {
-            if (typeof firebase !== 'undefined') {
-                db = firebase.firestore();
-                console.log('✅ Firebase Firestore initialized');
-                logDebug('✅ Firebase Firestore initialized');
-            } else {
-                throw new Error('Firebase library not loaded');
-            }
-        } catch (error) {
-            console.error('❌ Firebase initialization error:', error);
-            logDebug('❌ Firebase error: ' + error.message);
-            showStatus('error', 'Firebase not initialized. Please check your firebase-config.js file.');
-        }
+        // Use db from firebase-config.js
+        console.log('✅ Using Firebase from firebase-config.js');
+        console.log('Database object:', typeof db !== 'undefined' ? 'Available' : 'Not available');
 
         // All transactions from PDF
         const transactionsData = [
@@ -127,38 +104,29 @@
             { date: '2026-05-09', type: 'income', category: 'Tailoring Work', amount: 150.00, description: 'E406, Zubaida, 9884979227' }
         ];
 
-        function logDebug(message) {
-            const debugDiv = document.getElementById('debugLog');
-            debugDiv.style.display = 'block';
-            const timestamp = new Date().toLocaleTimeString();
-            debugDiv.innerHTML += `[${timestamp}] ${message}<br>`;
-            debugDiv.scrollTop = debugDiv.scrollHeight;
-            console.log(message);
-        }
-
         function showStatus(type, message) {
             const statusDiv = document.getElementById('status');
             statusDiv.className = `status ${type}`;
             statusDiv.innerHTML = message;
         }
 
-        async function handleImport() {
-            logDebug('🔘 Import button clicked');
+        async function importAllTransactions() {
+            console.log('🔘 Import button clicked');
             
-            if (!db) {
-                logDebug('❌ Firebase not initialized');
+            if (typeof db === 'undefined') {
+                console.error('❌ Firebase db not available');
                 showStatus('error', '❌ Firebase is not initialized. Check console for details.');
                 return;
             }
 
-            logDebug(`📊 Total transactions to import: ${transactionsData.length}`);
+            console.log(`📊 Total transactions to import: ${transactionsData.length}`);
             
             const importBtn = document.getElementById('importBtn');
             importBtn.disabled = true;
             importBtn.textContent = '⏳ Importing...';
             
             showStatus('info', '🔄 Importing 35 transactions to Firestore...');
-            logDebug('🔄 Starting import process...');
+            console.log('🔄 Starting import process...');
             
             try {
                 const userEmail = 'callpavithra52@gmail.com';
@@ -169,7 +137,7 @@
                     const transaction = transactionsData[i];
                     
                     try {
-                        logDebug(`📝 Importing transaction ${i + 1}/${transactionsData.length}: ${transaction.category} - ₹${transaction.amount}`);
+                        console.log(`📝 Importing ${i + 1}/${transactionsData.length}: ${transaction.category} - ₹${transaction.amount}`);
                         
                         const doc = {
                             userEmail: userEmail,
@@ -183,19 +151,17 @@
                         
                         await db.collection('transactions').add(doc);
                         successCount++;
-                        logDebug(`✅ Success: ${successCount}/${transactionsData.length}`);
                         
                     } catch (err) {
                         errorCount++;
-                        logDebug(`❌ Error importing transaction ${i + 1}: ${err.message}`);
-                        console.error(err);
+                        console.error(`❌ Error importing transaction ${i + 1}:`, err);
                     }
                 }
                 
                 const incomeTotal = transactionsData.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
                 const expenseTotal = transactionsData.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
                 
-                logDebug(`✅ Import complete! Success: ${successCount}, Errors: ${errorCount}`);
+                console.log(`✅ Import complete! Success: ${successCount}, Errors: ${errorCount}`);
                 
                 showStatus('success', `
                     <strong>✅ Import Complete!</strong><br>
@@ -213,8 +179,7 @@
                 `);
                 
             } catch (error) {
-                logDebug(`❌ Critical error: ${error.message}`);
-                console.error('Import error:', error);
+                console.error('❌ Critical error:', error);
                 showStatus('error', `❌ Error importing data: ${error.message}`);
             } finally {
                 const importBtn = document.getElementById('importBtn');
@@ -223,12 +188,12 @@
             }
         }
 
-        async function clearExisting() {
+        async function clearExistingData() {
             if (!confirm('⚠️ This will delete ALL existing transactions for callpavithra52@gmail.com. Continue?')) {
                 return;
             }
             
-            if (!db) {
+            if (typeof db === 'undefined') {
                 showStatus('error', '❌ Firebase is not initialized.');
                 return;
             }
@@ -238,7 +203,7 @@
             clearBtn.textContent = '⏳ Clearing...';
             
             showStatus('info', '🗑️ Clearing existing data...');
-            logDebug('🗑️ Starting to clear existing data...');
+            console.log('🗑️ Starting to clear existing data...');
             
             try {
                 const userEmail = 'callpavithra52@gmail.com';
@@ -253,14 +218,14 @@
                 
                 await batch.commit();
                 
-                logDebug(`✅ Cleared ${snapshot.size} transactions`);
+                console.log(`✅ Cleared ${snapshot.size} transactions`);
                 showStatus('success', `
                     ✅ Cleared ${snapshot.size} existing transactions.<br>
                     Now click <strong>"Import All Transactions"</strong> to import the PDF data.
                 `);
                 
             } catch (error) {
-                logDebug(`❌ Error clearing data: ${error.message}`);
+                console.error('❌ Error clearing data:', error);
                 showStatus('error', `❌ Error clearing data: ${error.message}`);
             } finally {
                 const clearBtn = document.getElementById('clearBtn');
@@ -271,12 +236,12 @@
 
         // Initial check
         window.addEventListener('load', () => {
-            logDebug('📄 Page loaded');
-            if (db) {
-                logDebug('✅ Firebase is connected');
+            console.log('📄 Page loaded');
+            if (typeof db !== 'undefined') {
+                console.log('✅ Firebase is connected');
                 showStatus('info', '✅ Firebase connected. Ready to import 35 transactions.');
             } else {
-                logDebug('❌ Firebase not connected');
+                console.error('❌ Firebase not connected');
                 showStatus('error', '❌ Firebase not connected. Please check firebase-config.js');
             }
         });
