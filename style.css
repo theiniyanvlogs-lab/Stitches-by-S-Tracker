@@ -37,17 +37,14 @@ body {
     margin-bottom: 15px;
 }
 
-/* Custom Circular Logo Image Styles - FIXED */
 .main-logo {
-    max-width: 450px; 
+    max-width: 450px; /* Large size to prevent text cutoff */
     width: 100%;
     height: auto;
     margin-bottom: 10px;
     filter: drop-shadow(0px 8px 15px rgba(0,0,0,0.3));
     transition: transform 0.3s ease;
-    
-    /* ADD THIS LINE TO MAKE IT ROUND */
-    border-radius: 80%; 
+    border-radius: 50%; /* This makes the square image round */
 }
 
 .main-logo:hover {
