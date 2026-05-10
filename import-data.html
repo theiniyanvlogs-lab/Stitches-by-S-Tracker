@@ -25,11 +25,7 @@
             border-radius: 20px; 
             box-shadow: 0 20px 60px rgba(0,0,0,0.3); 
         }
-        h1 { 
-            color: #667eea; 
-            margin-bottom: 20px; 
-            font-size: 2rem;
-        }
+        h1 { color: #667eea; margin-bottom: 20px; font-size: 2rem; }
         p { color: #555; margin-bottom: 20px; }
         .btn { 
             padding: 15px 30px; 
@@ -42,48 +38,21 @@
             margin: 10px 5px;
             transition: transform 0.2s;
         }
-        .btn:hover { 
-            transform: translateY(-2px); 
-        }
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .status { 
-            padding: 20px; 
-            margin: 20px 0; 
-            border-radius: 10px;
-            font-size: 1rem;
-        }
-        .success { 
-            background: #d4edda; 
-            color: #155724; 
-            border: 1px solid #c3e6cb;
-        }
-        .error { 
-            background: #f8d7da; 
-            color: #721c24; 
-            border: 1px solid #f5c6cb;
-        }
-        .info { 
-            background: #d1ecf1; 
-            color: #0c5460; 
-            border: 1px solid #bee5eb;
-        }
-        .warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-        .stats {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
+        .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .status { padding: 20px; margin: 20px 0; border-radius: 10px; font-size: 1rem; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .debug { 
+            background: #f5f5f5; 
+            padding: 15px; 
+            border-radius: 5px; 
             margin: 15px 0;
-        }
-        .stats strong {
-            color: #2d3436;
+            font-family: monospace;
+            font-size: 0.85rem;
+            max-height: 200px;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -93,17 +62,10 @@
         <p>This will import all <strong>35 transactions</strong> from the StitchesByS_Report_20260510.pdf</p>
         
         <div id="status"></div>
-        
-        <div class="stats" id="stats" style="display: none;">
-            <strong>📊 Import Summary:</strong><br>
-            Total Transactions: <span id="totalCount">35</span><br>
-            Total Income: ₹<span id="totalIncome">17,650.00</span><br>
-            Total Expenses: ₹<span id="totalExpenses">4,052.00</span><br>
-            Net Balance: ₹<span id="netBalance">13,598.00</span>
-        </div>
+        <div id="debugLog" class="debug" style="display: none;"></div>
         
         <div>
-            <button class="btn" id="importBtn" onclick="importData()">📥 Import All Transactions</button>
+            <button class="btn" id="importBtn" onclick="handleImport()">📥 Import All Transactions</button>
             <button class="btn" id="clearBtn" onclick="clearExisting()">🗑️ Clear Existing Data First</button>
             <a href="index.html" class="btn" style="text-decoration: none; display: inline-block;">← Back to App</a>
         </div>
@@ -113,16 +75,21 @@
         // Initialize Firebase
         let db;
         try {
-            db = firebase.firestore();
-            console.log('✅ Firebase Firestore initialized');
+            if (typeof firebase !== 'undefined') {
+                db = firebase.firestore();
+                console.log('✅ Firebase Firestore initialized');
+                logDebug('✅ Firebase Firestore initialized');
+            } else {
+                throw new Error('Firebase library not loaded');
+            }
         } catch (error) {
             console.error('❌ Firebase initialization error:', error);
+            logDebug('❌ Firebase error: ' + error.message);
             showStatus('error', 'Firebase not initialized. Please check your firebase-config.js file.');
         }
 
-        // All transactions from PDF - DEFINED BEFORE USE
+        // All transactions from PDF
         const transactionsData = [
-            // March 2026
             { date: '2026-03-04', type: 'income', category: 'Tailoring Work', amount: 990.00, description: 'D307' },
             { date: '2026-03-07', type: 'expense', category: 'Accessories Purchase', amount: 290.00, description: 'Akash Matching Centre' },
             { date: '2026-03-10', type: 'income', category: 'Tailoring Work', amount: 770.00, description: 'D207' },
@@ -138,8 +105,6 @@
             { date: '2026-03-25', type: 'income', category: 'Tailoring Work', amount: 520.00, description: 'G704 Rubi, Cash paid' },
             { date: '2026-03-26', type: 'income', category: 'Tailoring Work', amount: 385.00, description: 'B409, Anju, 7358834188' },
             { date: '2026-03-27', type: 'expense', category: 'Accessories Purchase', amount: 580.00, description: '-' },
-            
-            // April 2026
             { date: '2026-04-01', type: 'income', category: 'Tailoring Work', amount: 500.00, description: 'F401, Priya Johnes, 500 cash paid' },
             { date: '2026-04-03', type: 'expense', category: 'Accessories Purchase', amount: 200.00, description: 'Babin case 1& Babin 10 nos' },
             { date: '2026-04-04', type: 'expense', category: 'Accessories Purchase', amount: 384.00, description: '384, scale 100 rs& piping 20 rs each MTR, etc (Akash)' },
@@ -157,35 +122,43 @@
             { date: '2026-04-21', type: 'income', category: 'Tailoring Work', amount: 700.00, description: '-' },
             { date: '2026-04-22', type: 'income', category: 'Tailoring Work', amount: 5100.00, description: 'B202 Mythili' },
             { date: '2026-04-24', type: 'income', category: 'Tailoring Work', amount: 345.00, description: 'G407' },
-            
-            // May 2026
             { date: '2026-05-07', type: 'income', category: 'Tailoring Work', amount: 455.00, description: 'Parvathy G301' },
             { date: '2026-05-08', type: 'expense', category: 'Thread & Needles', amount: 432.00, description: 'Akash matching' },
             { date: '2026-05-09', type: 'income', category: 'Tailoring Work', amount: 150.00, description: 'E406, Zubaida, 9884979227' }
         ];
 
-        // Show status message
+        function logDebug(message) {
+            const debugDiv = document.getElementById('debugLog');
+            debugDiv.style.display = 'block';
+            const timestamp = new Date().toLocaleTimeString();
+            debugDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            debugDiv.scrollTop = debugDiv.scrollHeight;
+            console.log(message);
+        }
+
         function showStatus(type, message) {
             const statusDiv = document.getElementById('status');
             statusDiv.className = `status ${type}`;
             statusDiv.innerHTML = message;
-            statusDiv.style.display = 'block';
         }
 
-        // Import all transactions
-        async function importData() {
-            const importBtn = document.getElementById('importBtn');
-            const clearBtn = document.getElementById('clearBtn');
+        async function handleImport() {
+            logDebug('🔘 Import button clicked');
             
             if (!db) {
-                showStatus('error', '❌ Firebase is not initialized. Please check your firebase-config.js file.');
+                logDebug('❌ Firebase not initialized');
+                showStatus('error', '❌ Firebase is not initialized. Check console for details.');
                 return;
             }
 
+            logDebug(`📊 Total transactions to import: ${transactionsData.length}`);
+            
+            const importBtn = document.getElementById('importBtn');
             importBtn.disabled = true;
             importBtn.textContent = '⏳ Importing...';
             
             showStatus('info', '🔄 Importing 35 transactions to Firestore...');
+            logDebug('🔄 Starting import process...');
             
             try {
                 const userEmail = 'callpavithra52@gmail.com';
@@ -196,6 +169,8 @@
                     const transaction = transactionsData[i];
                     
                     try {
+                        logDebug(`📝 Importing transaction ${i + 1}/${transactionsData.length}: ${transaction.category} - ₹${transaction.amount}`);
+                        
                         const doc = {
                             userEmail: userEmail,
                             type: transaction.type,
@@ -208,29 +183,25 @@
                         
                         await db.collection('transactions').add(doc);
                         successCount++;
-                        
-                        console.log(`✅ Imported ${successCount}/${transactionsData.length}: ${transaction.category} - ₹${transaction.amount}`);
+                        logDebug(`✅ Success: ${successCount}/${transactionsData.length}`);
                         
                     } catch (err) {
                         errorCount++;
-                        console.error(`❌ Error importing transaction ${i + 1}:`, err);
+                        logDebug(`❌ Error importing transaction ${i + 1}: ${err.message}`);
+                        console.error(err);
                     }
                 }
                 
-                // Show success message
-                const incomeTotal = transactionsData
-                    .filter(t => t.type === 'income')
-                    .reduce((sum, t) => sum + t.amount, 0);
-                    
-                const expenseTotal = transactionsData
-                    .filter(t => t.type === 'expense')
-                    .reduce((sum, t) => sum + t.amount, 0);
+                const incomeTotal = transactionsData.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+                const expenseTotal = transactionsData.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+                
+                logDebug(`✅ Import complete! Success: ${successCount}, Errors: ${errorCount}`);
                 
                 showStatus('success', `
                     <strong>✅ Import Complete!</strong><br>
                     Successfully imported: ${successCount} transactions<br>
                     Errors: ${errorCount}<br><br>
-                    <div class="stats" style="background: white; margin: 10px 0; padding: 10px;">
+                    <div style="background: white; margin: 10px 0; padding: 10px; border-radius: 5px;">
                         <strong>📊 Summary:</strong><br>
                         Total Income: ₹${incomeTotal.toFixed(2)}<br>
                         Total Expenses: ₹${expenseTotal.toFixed(2)}<br>
@@ -241,30 +212,17 @@
                     </a>
                 `);
                 
-                // Show stats
-                document.getElementById('stats').style.display = 'block';
-                document.getElementById('totalCount').textContent = successCount;
-                document.getElementById('totalIncome').textContent = incomeTotal.toFixed(2);
-                document.getElementById('totalExpenses').textContent = expenseTotal.toFixed(2);
-                document.getElementById('netBalance').textContent = (incomeTotal - expenseTotal).toFixed(2);
-                
             } catch (error) {
+                logDebug(`❌ Critical error: ${error.message}`);
                 console.error('Import error:', error);
-                showStatus('error', `
-                    ❌ Error importing data: ${error.message}<br>
-                    Please check:<br>
-                    1. Your Firebase configuration (firebase-config.js)<br>
-                    2. Firestore security rules allow writes<br>
-                    3. Your internet connection<br><br>
-                    Error details: ${error.toString()}
-                `);
+                showStatus('error', `❌ Error importing data: ${error.message}`);
             } finally {
+                const importBtn = document.getElementById('importBtn');
                 importBtn.disabled = false;
                 importBtn.textContent = '📥 Import All Transactions';
             }
         }
 
-        // Clear existing data
         async function clearExisting() {
             if (!confirm('⚠️ This will delete ALL existing transactions for callpavithra52@gmail.com. Continue?')) {
                 return;
@@ -280,6 +238,7 @@
             clearBtn.textContent = '⏳ Clearing...';
             
             showStatus('info', '🗑️ Clearing existing data...');
+            logDebug('🗑️ Starting to clear existing data...');
             
             try {
                 const userEmail = 'callpavithra52@gmail.com';
@@ -294,15 +253,17 @@
                 
                 await batch.commit();
                 
+                logDebug(`✅ Cleared ${snapshot.size} transactions`);
                 showStatus('success', `
                     ✅ Cleared ${snapshot.size} existing transactions.<br>
                     Now click <strong>"Import All Transactions"</strong> to import the PDF data.
                 `);
                 
             } catch (error) {
-                console.error('Clear error:', error);
+                logDebug(`❌ Error clearing data: ${error.message}`);
                 showStatus('error', `❌ Error clearing data: ${error.message}`);
             } finally {
+                const clearBtn = document.getElementById('clearBtn');
                 clearBtn.disabled = false;
                 clearBtn.textContent = '🗑️ Clear Existing Data First';
             }
@@ -310,9 +271,12 @@
 
         // Initial check
         window.addEventListener('load', () => {
+            logDebug('📄 Page loaded');
             if (db) {
+                logDebug('✅ Firebase is connected');
                 showStatus('info', '✅ Firebase connected. Ready to import 35 transactions.');
             } else {
+                logDebug('❌ Firebase not connected');
                 showStatus('error', '❌ Firebase not connected. Please check firebase-config.js');
             }
         });
