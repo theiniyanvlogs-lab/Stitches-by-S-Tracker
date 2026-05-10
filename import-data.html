@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Data - Stitches by S</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; padding: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        h1 { color: #667eea; margin-bottom: 20px; }
+        .btn { padding: 15px 30px; background: linear-gradient(135deg, #2d3436 0%, #000000 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1rem; margin: 10px 0; }
+        .btn:hover { transform: translateY(-2px); }
+        .status { padding: 15px; margin: 20px 0; border-radius: 10px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📥 Import PDF Data to Firestore</h1>
+        <p>This will import all 35 transactions from the StitchesByS_Report_20260510.pdf</p>
+        
+        <div id="status"></div>
+        
+        <button class="btn" onclick="importData()">📥 Import All Transactions</button>
+        <button class="btn" onclick="clearExisting()">🗑️ Clear Existing Data First</button>
+        <a href="index.html" class="btn" style="text-decoration: none; display: inline-block;">← Back to App</a>
+    </div>
+
+    <script>
+        const db = firebase.firestore();
+        
+        // All transactions from PDF
+        const transactionsData = [
+            // March 2026
+            { date: '2026-03-04', type: 'income', category: 'Tailoring Work', amount: 990.00, description: 'D307' },
+            { date: '2026-03-07', type: 'expense', category: 'Accessories Purchase', amount: 290.00, description: 'Akash Matching Centre' },
+            { date: '2026-03-10', type: 'income', category: 'Tailoring Work', amount: 770.00, description: 'D207' },
+            { date: '2026-03-13', type: 'expense', category: 'Accessories Purchase', amount: 230.00, description: 'Akash Matching Centre' },
+            { date: '2026-03-16', type: 'expense', category: 'Accessories Purchase', amount: 212.00, description: 'Akash Matching Centre' },
+            { date: '2026-03-17', type: 'income', category: 'Tailoring Work', amount: 700.00, description: 'F401' },
+            { date: '2026-03-19', type: 'income', category: 'Tailoring Work', amount: 750.00, description: 'G306, Mayilvani' },
+            { date: '2026-03-19', type: 'income', category: 'Tailoring Work', amount: 820.00, description: 'E504, Bharathi' },
+            { date: '2026-03-20', type: 'income', category: 'Tailoring Work', amount: 600.00, description: 'H107, Sulthana' },
+            { date: '2026-03-23', type: 'income', category: 'Alterations', amount: 100.00, description: 'D207' },
+            { date: '2026-03-23', type: 'income', category: 'Tailoring Work', amount: 600.00, description: 'B202, Mythili' },
+            { date: '2026-03-25', type: 'income', category: 'Alterations', amount: 250.00, description: 'D407' },
+            { date: '2026-03-25', type: 'income', category: 'Tailoring Work', amount: 520.00, description: 'G704 Rubi, Cash paid' },
+            { date: '2026-03-26', type: 'income', category: 'Tailoring Work', amount: 385.00, description: 'B409, Anju, 7358834188' },
+            { date: '2026-03-27', type: 'expense', category: 'Accessories Purchase', amount: 580.00, description: '-' },
+            
+            // April 2026
+            { date: '2026-04-01', type: 'income', category: 'Tailoring Work', amount: 500.00, description: 'F401, Priya Johnes, 500 cash paid' },
+            { date: '2026-04-03', type: 'expense', category: 'Accessories Purchase', amount: 200.00, description: 'Babin case 1& Babin 10 nos' },
+            { date: '2026-04-04', type: 'expense', category: 'Accessories Purchase', amount: 384.00, description: '384, scale 100 rs& piping 20 rs each MTR, etc (Akash)' },
+            { date: '2026-04-04', type: 'income', category: 'Tailoring Work', amount: 420.00, description: 'Radha, G301, 9500065971' },
+            { date: '2026-04-05', type: 'income', category: 'Tailoring Work', amount: 1370.00, description: 'F401, Priya Jones, 8220795742' },
+            { date: '2026-04-10', type: 'income', category: 'Tailoring Work', amount: 675.00, description: 'Blouse 2 with lining(Each 400 rs)' },
+            { date: '2026-04-11', type: 'expense', category: 'Accessories Purchase', amount: 392.00, description: 'Akas' },
+            { date: '2026-04-12', type: 'expense', category: 'Accessories Purchase', amount: 701.00, description: 'Akash(Zip 10)' },
+            { date: '2026-04-15', type: 'income', category: 'Tailoring Work', amount: 450.00, description: 'Saree edge 150, Blouse plain 150, Chudidar top without lining 300 rs' },
+            { date: '2026-04-15', type: 'income', category: 'Tailoring Work', amount: 300.00, description: 'C505, Vidhya, cash paid' },
+            { date: '2026-04-16', type: 'expense', category: 'Accessories Purchase', amount: 50.00, description: 'Aakash, Arm Curve scale 40, zip 10 rs' },
+            { date: '2026-04-16', type: 'expense', category: 'Accessories Purchase', amount: 480.00, description: 'Nalli Anna nagar two shops near roundtana' },
+            { date: '2026-04-21', type: 'expense', category: 'Accessories Purchase', amount: 101.00, description: 'Akash,' },
+            { date: '2026-04-21', type: 'income', category: 'Tailoring Work', amount: 700.00, description: 'C505' },
+            { date: '2026-04-21', type: 'income', category: 'Tailoring Work', amount: 700.00, description: '-' },
+            { date: '2026-04-22', type: 'income', category: 'Tailoring Work', amount: 5100.00, description: 'B202 Mythili' },
+            { date: '2026-04-24', type: 'income', category: 'Tailoring Work', amount: 345.00, description: 'G407' },
+            
+            // May 2026
+            { date: '2026-05-07', type: 'income', category: 'Tailoring Work', amount: 455.00, description: 'Parvathy G301' },
+            { date: '2026-05-08', type: 'expense', category: 'Thread & Needles', amount: 432.00, description: 'Akash matching' },
+            { date: '2026-05-09', type: 'income', category: 'Tailoring Work', amount: 150.00, description: 'E406, Zubaida, 9884979227' }
+        ];
+
+        async function importData() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = '<div class="status info">🔄 Importing 35 transactions...</div>';
+            
+            try {
+                const userEmail = 'callpavithra52@gmail.com';
+                let successCount = 0;
+                
+                for (const transaction of transactionsData) {
+                    const doc = {
+                        userEmail: userEmail,
+                        type: transaction.type,
+                        amount: transaction.amount,
+                        category: transaction.category,
+                        date: transaction.date,
+                        description: transaction.description,
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    await db.collection('transactions').add(doc);
+                    successCount++;
+                }
+                
+                statusDiv.innerHTML = `
+                    <div class="status success">
+                        ✅ Successfully imported ${successCount} transactions!<br>
+                        Total Income: ₹17,650.00<br>
+                        Total Expenses: ₹4,052.00<br>
+                        Net Balance: ₹13,598.00<br><br>
+                        <a href="index.html" style="color: #155724; font-weight: bold;">Go to App →</a>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Import error:', error);
+                statusDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ Error importing data: ${error.message}<br>
+                        Please check your Firebase configuration and try again.
+                    </div>
+                `;
+            }
+        }
+
+        async function clearExisting() {
+            if (!confirm('⚠️ This will delete ALL existing transactions. Continue?')) return;
+            
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = '<div class="status info">🗑️ Clearing existing data...</div>';
+            
+            try {
+                const snapshot = await db.collection('transactions').get();
+                const batch = db.batch();
+                snapshot.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+                
+                statusDiv.innerHTML = '<div class="status success">✅ All existing data cleared. Now click "Import All Transactions"</div>';
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">❌ Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
