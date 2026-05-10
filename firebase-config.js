@@ -14,11 +14,3 @@ const db = firebase.firestore();
 
 console.log("✅ Firebase initialized for Stitches by S!");
 console.log("📊 Project ID:", firebaseConfig.projectId);
-
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-console.log("✅ Firebase initialized for Stitches by S!");
