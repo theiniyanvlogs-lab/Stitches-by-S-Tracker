@@ -16,46 +16,87 @@ body {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
-/* Header */
+/* ========== HEADER WITH STITCHES BY S BRANDING ========== */
 .header {
     text-align: center;
     margin-bottom: 30px;
-    padding: 20px;
+    padding: 40px 30px;
     background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     border-radius: 20px;
     color: white;
 }
 
-.logo {
+.logo-container {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 15px;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
 }
 
-.logo i {
-    font-size: 2.5rem;
+.logo-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease;
 }
 
-.logo h1 {
-    font-size: 2.5rem;
+.logo-icon:hover {
+    transform: scale(1.1);
+}
+
+.logo-icon i {
+    font-size: 2rem;
+    color: white;
+}
+
+.logo-text {
+    display: flex;
+    align-items: center;
+    font-size: 2.8rem;
     font-weight: 700;
+    line-height: 1;
 }
 
+/* "Stitches by" - Pink/Purple to Blue Gradient */
 .gradient-text {
-    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    background: linear-gradient(135deg, #e91e63 0%, #9c27b0 40%, #2196f3 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+}
+
+/* "S" - Elegant Gold Gradient in Cursive Style */
+.gold-s {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 40%, #ffb800 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-family: 'Brush Script MT', 'Dancing Script', cursive, 'Poppins', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-left: 5px;
+    transform: rotate(-5deg);
+    display: inline-block;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .subtitle {
     font-size: 1rem;
     opacity: 0.95;
+    margin-top: 10px;
+    font-weight: 400;
 }
 
-/* Summary Cards */
+/* ========== SUMMARY CARDS ========== */
 .summary-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -94,7 +135,7 @@ body {
 .card-content h3 { font-size: 0.9rem; color: #666; margin-bottom: 5px; }
 .card-content p { font-size: 1.6rem; font-weight: 700; color: #333; }
 
-/* Form Container */
+/* ========== FORM CONTAINER ========== */
 .form-container {
     background: #f8f9fa;
     border-radius: 20px;
@@ -155,7 +196,7 @@ body {
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3); 
 }
 
-/* Filter Container */
+/* ========== FILTER CONTAINER ========== */
 .filter-container {
     display: flex;
     gap: 15px;
@@ -185,7 +226,7 @@ body {
 
 .btn-pdf:hover { transform: translateY(-3px); }
 
-/* Transaction List */
+/* ========== TRANSACTION LIST ========== */
 .transactions-container {
     margin-bottom: 30px;
 }
@@ -245,7 +286,7 @@ body {
     transform: scale(1.1);
 }
 
-/* Action Buttons */
+/* ========== ACTION BUTTONS ========== */
 .action-buttons {
     display: flex;
     gap: 15px;
@@ -266,6 +307,7 @@ body {
     gap: 8px;
     transition: all 0.3s ease;
     color: white;
+    min-height: 50px;
 }
 
 .btn-action:hover { transform: translateY(-3px); }
@@ -278,7 +320,7 @@ body {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
 }
 
-/* Sync Status */
+/* ========== SYNC STATUS ========== */
 .sync-status {
     text-align: center;
     padding: 12px;
@@ -292,7 +334,7 @@ body {
 .sync-status.synced { background: #d4edda; color: #155724; }
 .sync-status.error { background: #f8d7da; color: #721c24; }
 
-/* Footer */
+/* ========== FOOTER ========== */
 .app-footer {
     text-align: center;
     padding: 20px;
@@ -303,7 +345,7 @@ body {
     font-weight: 500;
 }
 
-/* Scrollbar */
+/* ========== SCROLLBAR ========== */
 .transaction-list::-webkit-scrollbar { width: 6px; }
 .transaction-list::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
 .transaction-list::-webkit-scrollbar-thumb { background: #667eea; border-radius: 10px; }
@@ -315,14 +357,122 @@ body {
     font-style: italic; 
 }
 
-/* Responsive */
+/* ========== RESPONSIVE DESIGN ========== */
 @media (max-width: 768px) {
     .container { padding: 20px; border-radius: 20px; }
-    .logo h1 { font-size: 2rem; }
+    
+    .header { padding: 30px 20px; }
+    
+    .logo-text { font-size: 2.2rem; }
+    .gold-s { font-size: 2.8rem; }
+    .logo-icon { width: 50px; height: 50px; }
+    .logo-icon i { font-size: 1.6rem; }
+    
     .summary-cards { grid-template-columns: 1fr; }
     .form-row { grid-template-columns: 1fr; }
     .filter-container { flex-direction: column; }
     .action-buttons { flex-direction: column; }
+    
     .transaction-item { flex-direction: column; align-items: flex-start; gap: 10px; }
     .transaction-amount { margin: 0; }
+}
+
+@media (max-width: 480px) {
+    body { padding: 10px; }
+    
+    .header { padding: 25px 15px; }
+    
+    .logo-container { flex-direction: column; gap: 10px; }
+    .logo-text { font-size: 2rem; }
+    .gold-s { font-size: 2.5rem; transform: rotate(-3deg); }
+    
+    .card-content p { font-size: 1.4rem; }
+    
+    .btn-submit, .btn-action, .btn-pdf {
+        font-size: 0.9rem;
+        padding: 12px;
+    }
+}
+
+/* ========== PRINT STYLES ========== */
+@media print {
+    body {
+        background: white;
+        padding: 0;
+    }
+    
+    .container {
+        box-shadow: none;
+        border-radius: 0;
+        max-width: 100%;
+        padding: 20px;
+    }
+    
+    .btn-submit, .btn-action, .btn-pdf, .btn-delete,
+    .filter-container, .form-container {
+        display: none;
+    }
+    
+    .transaction-list {
+        max-height: none;
+        overflow: visible;
+    }
+}
+
+/* ========== ANIMATION UTILITIES ========== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* ========== FOCUS STATES FOR ACCESSIBILITY ========== */
+button:focus,
+input:focus,
+select:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* ========== DISABLED STATES ========== */
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* ========== LOADING STATE ========== */
+.loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #667eea;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
