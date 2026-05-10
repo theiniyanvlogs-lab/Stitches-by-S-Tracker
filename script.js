@@ -1,5 +1,6 @@
 let transactions = [];
 let userEmail = null;
+const DELETE_PASSWORD = "12345"; // Password for delete operations
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -10,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Check authentication
 function checkAuth() {
-    const email = prompt("Enter your email to access your data:\n(e.g., callpavithra52@gmail.com)", "callpavithra52@gmail.com");
+    const email = prompt("Enter your email to access your \n(e.g., callpavithra52@gmail.com)", "callpavithra52@gmail.com");
     
     if (email && email.trim() !== '') {
         userEmail = email.trim();
@@ -160,9 +161,20 @@ function renderTransactions(data = transactions) {
     `).join('');
 }
 
-// Delete transaction
+// 🔐 Password verification helper
+function verifyPassword() {
+    const password = prompt("🔐 Enter password to confirm:");
+    if (password === DELETE_PASSWORD) {
+        return true;
+    } else {
+        alert("❌ Incorrect password. Operation cancelled.");
+        return false;
+    }
+}
+
+// Delete transaction - with PASSWORD PROTECTION
 async function deleteTransaction(id) {
-    if (!confirm('Delete this transaction?')) return;
+    if (!verifyPassword()) return;
     
     try {
         updateSyncStatus('🗑️ Deleting...', '');
@@ -356,8 +368,10 @@ function exportData() {
     updateSyncStatus('💾 Data exported!', 'synced');
 }
 
-// Clear all data
+// Clear all data - with PASSWORD PROTECTION
 async function clearAllData() {
+    if (!verifyPassword()) return;
+    
     if (!confirm('⚠️ Delete ALL transactions? This cannot be undone!')) return;
     
     try {
@@ -428,13 +442,75 @@ function updateSummary() {
     document.getElementById('netBalance').textContent = `₹${balance.toFixed(2)}`;
 }
 
-// Generate PDF Report
+// ✅ Format date to DD/MM/YYYY format
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    // Fix timezone issue by adding time component
+    const date = new Date(dateStr + 'T00:00:00');
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+}
+
+// ✅ Generate PDF Report with DATE RANGE FILTER - FIXED
 function generatePDFReport() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    const income = transactions.filter(t => t.type === 'income');
-    const expenses = transactions.filter(t => t.type === 'expense');
+    // Get date range values
+    const fromDateInput = document.getElementById('fromDate')?.value;
+    const toDateInput = document.getElementById('toDate')?.value;
+    
+    console.log('From Date Input:', fromDateInput);
+    console.log('To Date Input:', toDateInput);
+    
+    // Filter transactions by date range if dates are provided
+    let filteredTransactions = transactions;
+    let dateRangeText = 'All Time';
+    
+    if (fromDateInput || toDateInput) {
+        filteredTransactions = transactions.filter(t => {
+            // Convert transaction date to comparable format
+            const transDate = new Date(t.date + 'T00:00:00');
+            const transDateStr = t.date; // YYYY-MM-DD format
+            
+            let fromMatch = true;
+            let toMatch = true;
+            
+            if (fromDateInput) {
+                const fromDate = new Date(fromDateInput + 'T00:00:00');
+                fromMatch = transDate >= fromDate;
+            }
+            
+            if (toDateInput) {
+                const toDate = new Date(toDateInput + 'T00:00:00');
+                // Set to end of day to include the entire day
+                toDate.setHours(23, 59, 59, 999);
+                toMatch = transDate <= toDate;
+            }
+            
+            return fromMatch && toMatch;
+        });
+        
+        if (fromDateInput && toDateInput) {
+            dateRangeText = `${formatDate(fromDateInput)} - ${formatDate(toDateInput)}`;
+        } else if (fromDateInput) {
+            dateRangeText = `From ${formatDate(fromDateInput)}`;
+        } else if (toDateInput) {
+            dateRangeText = `To ${formatDate(toDateInput)}`;
+        }
+    }
+    
+    console.log('Filtered Transactions Count:', filteredTransactions.length);
+    
+    if (filteredTransactions.length === 0) {
+        alert('⚠️ No transactions found for the selected date range.');
+        return;
+    }
+    
+    const income = filteredTransactions.filter(t => t.type === 'income');
+    const expenses = filteredTransactions.filter(t => t.type === 'expense');
     const totalIncome = income.reduce((sum, t) => sum + t.amount, 0);
     const totalExpenses = expenses.reduce((sum, t) => sum + t.amount, 0);
     const netBalance = totalIncome - totalExpenses;
@@ -443,51 +519,49 @@ function generatePDFReport() {
     doc.setFontSize(20);
     doc.text('Stitches by S: Financial Report', 105, 15, { align: 'center' });
     doc.setFontSize(11);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 105, 22, { align: 'center' });
+    doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, 105, 22, { align: 'center' });
     doc.text(`User: ${userEmail}`, 105, 28, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text(`Period: ${dateRangeText}`, 105, 34, { align: 'center' });
     
     // Summary
     doc.setFontSize(12);
-    doc.text(`Total Credit: ${totalIncome.toFixed(2)}`, 14, 40);
-    doc.text(`Total Debit: ${totalExpenses.toFixed(2)}`, 80, 40);
-    doc.text(`Net Balance: ${netBalance.toFixed(2)}`, 150, 40);
+    doc.text(`Total Credit: ₹${totalIncome.toFixed(2)}`, 14, 45);
+    doc.text(`Total Debit: ₹${totalExpenses.toFixed(2)}`, 80, 45);
+    doc.text(`Net Balance: ₹${netBalance.toFixed(2)}`, 150, 45);
     
     // Table
     const tableColumn = ["Date", "Category", "Credit (Income)", "Debit (Expense)", "Description"];
-    const tableRows = transactions.map(t => [
-        t.date,
+    const tableRows = filteredTransactions.map(t => [
+        formatDate(t.date), // Use formatted date DD/MM/YYYY
         t.category,
-        t.type === 'income' ? t.amount.toFixed(2) : '-',
-        t.type === 'expense' ? t.amount.toFixed(2) : '-',
+        t.type === 'income' ? `₹${t.amount.toFixed(2)}` : '-',
+        t.type === 'expense' ? `₹${t.amount.toFixed(2)}` : '-',
         t.description
     ]);
     
     doc.autoTable({
         head: [tableColumn],
         body: tableRows,
-        startY: 50,
+        startY: 55,
         theme: 'grid',
         headStyles: { fillColor: [45, 52, 54] },
         styles: { fontSize: 9 }
     });
     
     // Footer
+    const finalY = doc.lastAutoTable.finalY + 10;
     doc.setFontSize(10);
+    doc.text(`Total Transactions: ${filteredTransactions.length}`, 14, finalY);
     doc.text('Powered by iniyan.talkies', 105, 285, { align: 'center' });
     
-    // Save
-    doc.save(`StitchesByS_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    // Save with date range in filename
+    const fileName = fromDateInput && toDateInput 
+        ? `StitchesByS_Report_${fromDateInput}_to_${toDateInput}.pdf`
+        : `StitchesByS_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+    
+    doc.save(fileName);
     updateSyncStatus('📄 PDF Report generated!', 'synced');
-}
-
-// Format date
-function formatDate(dateStr) {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-IN', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric' 
-    });
 }
 
 // Update sync status
