@@ -37,15 +37,17 @@ body {
     margin-bottom: 15px;
 }
 
-/* Custom Circular Logo Image Styles - FIXED & LOCKED */
+/* Custom Circular Logo Image Styles - FIXED */
 .main-logo {
-    max-width: 380px; /* Increased size to show full logo */
+    max-width: 380px; 
     width: 100%;
     height: auto;
     margin-bottom: 10px;
     filter: drop-shadow(0px 8px 15px rgba(0,0,0,0.3));
     transition: transform 0.3s ease;
-    /* border-radius removed to prevent cutting off text */
+    
+    /* ADD THIS LINE TO MAKE IT ROUND */
+    border-radius: 60%; 
 }
 
 .main-logo:hover {
