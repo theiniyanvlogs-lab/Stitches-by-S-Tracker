@@ -196,35 +196,71 @@ body {
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3); 
 }
 
-/* ========== FILTER CONTAINER ========== */
+/* ========== FILTER & SEARCH CONTAINER ========== */
 .filter-container {
     display: flex;
     gap: 15px;
     margin-bottom: 20px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
-.filter-container input, .filter-container select {
+.search-box {
+    flex: 2;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-box i {
+    position: absolute;
+    left: 15px;
+    color: #999;
+    pointer-events: none;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 12px 15px 12px 40px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 1rem;
+    background: white;
+    transition: border-color 0.3s ease;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.filter-container select {
     flex: 1;
     padding: 12px 15px;
     border: 2px solid #e0e0e0;
     border-radius: 10px;
     font-size: 1rem;
     background: white;
+    cursor: pointer;
 }
 
-.btn-pdf {
+.btn-preview, .btn-pdf {
     padding: 12px 20px;
-    background: linear-gradient(135deg, #2d3436 0%, #000000 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
     border-radius: 10px;
     font-weight: 600;
     cursor: pointer;
     transition: transform 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.btn-pdf:hover { transform: translateY(-3px); }
+.btn-preview:hover, .btn-pdf:hover { 
+    transform: translateY(-3px); 
+}
 
 /* ========== TRANSACTION LIST ========== */
 .transactions-container {
@@ -272,6 +308,29 @@ body {
 .transaction-item.income .transaction-amount { color: #43e97b; }
 .transaction-item.expense .transaction-amount { color: #fa709a; }
 
+.transaction-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-edit {
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-edit:hover {
+    transform: scale(1.1);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
 .btn-delete {
     padding: 8px 12px;
     background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
@@ -280,6 +339,9 @@ body {
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-delete:hover {
@@ -320,6 +382,10 @@ body {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
 }
 
+.restore {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
 /* ========== SYNC STATUS ========== */
 .sync-status {
     text-align: center;
@@ -357,6 +423,123 @@ body {
     font-style: italic; 
 }
 
+/* ========== MODALS ========== */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    animation: slideIn 0.3s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
+    cursor: pointer;
+    color: #999;
+    transition: color 0.2s ease;
+}
+
+.close-modal:hover { color: #333; }
+
+.modal-content h2 {
+    color: #667eea;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-content .form-group {
+    margin-bottom: 15px;
+}
+
+.modal-content label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #555;
+}
+
+.modal-content input,
+.modal-content select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.modal-content input:focus,
+.modal-content select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* Preview Modal Styles */
+.preview-summary {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 1.1rem;
+}
+
+.summary-row.total {
+    border-bottom: none;
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-top: 10px;
+}
+
+.category-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.category-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.net-amount.income { color: #43e97b; font-weight: 600; }
+.net-amount.expense { color: #fa709a; font-weight: 600; }
+
 /* ========== RESPONSIVE DESIGN ========== */
 @media (max-width: 768px) {
     .container { padding: 20px; border-radius: 20px; }
@@ -375,6 +558,9 @@ body {
     
     .transaction-item { flex-direction: column; align-items: flex-start; gap: 10px; }
     .transaction-amount { margin: 0; }
+    .transaction-actions { width: 100%; justify-content: flex-end; }
+    
+    .modal-content { width: 95%; padding: 20px; }
 }
 
 @media (max-width: 480px) {
@@ -388,10 +574,12 @@ body {
     
     .card-content p { font-size: 1.4rem; }
     
-    .btn-submit, .btn-action, .btn-pdf {
+    .btn-submit, .btn-action, .btn-pdf, .btn-preview {
         font-size: 0.9rem;
         padding: 12px;
     }
+    
+    .modal-content h2 { font-size: 1.3rem; }
 }
 
 /* ========== PRINT STYLES ========== */
@@ -408,8 +596,8 @@ body {
         padding: 20px;
     }
     
-    .btn-submit, .btn-action, .btn-pdf, .btn-delete,
-    .filter-container, .form-container {
+    .btn-submit, .btn-action, .btn-pdf, .btn-preview, .btn-edit, .btn-delete,
+    .filter-container, .form-container, .transaction-actions {
         display: none;
     }
     
@@ -417,6 +605,8 @@ body {
         max-height: none;
         overflow: visible;
     }
+    
+    .modal { display: none !important; }
 }
 
 /* ========== ANIMATION UTILITIES ========== */
