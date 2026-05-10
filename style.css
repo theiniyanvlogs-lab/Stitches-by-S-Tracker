@@ -33,6 +33,29 @@ body {
     gap: 15px;
     margin-bottom: 15px;
     flex-wrap: wrap;
+    min-height: 80px;
+}
+
+/* Custom Logo Image Styles */
+.main-logo {
+    max-width: 400px;
+    width: 100%;
+    height: auto;
+    margin-bottom: 10px;
+    filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.3));
+    transition: transform 0.3s ease;
+}
+
+.main-logo:hover {
+    transform: scale(1.02);
+}
+
+/* Fallback text logo (hidden by default) */
+.logo-fallback {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
 }
 
 .logo-icon {
@@ -586,6 +609,10 @@ body {
     
     .header { padding: 30px 20px; }
     
+    .main-logo {
+        max-width: 300px;
+    }
+    
     .logo-text { font-size: 2.2rem; }
     .gold-s { font-size: 2.8rem; }
     .logo-icon { width: 50px; height: 50px; }
@@ -616,6 +643,9 @@ body {
     .header { padding: 25px 15px; }
     
     .logo-container { flex-direction: column; gap: 10px; }
+    .main-logo {
+        max-width: 250px;
+    }
     .logo-text { font-size: 2rem; }
     .gold-s { font-size: 2.5rem; transform: rotate(-3deg); }
     
