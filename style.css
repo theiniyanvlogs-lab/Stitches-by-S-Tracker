@@ -47,7 +47,7 @@ body {
     transition: transform 0.3s ease;
     
     /* ADD THIS LINE TO MAKE IT ROUND */
-    border-radius: 60%; 
+    border-radius: 80%; 
 }
 
 .main-logo:hover {
