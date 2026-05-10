@@ -246,15 +246,57 @@ async function saveEditedTransaction() {
     }
 }
 
-// 2. PREVIEW SUMMARY FUNCTION
-
+// 2. PREVIEW SUMMARY FUNCTION - FIXED to respect date range
 function showPreview() {
-    const incomeTotal = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-    const expenseTotal = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    // Get date range values
+    const fromDateInput = document.getElementById('fromDate')?.value;
+    const toDateInput = document.getElementById('toDate')?.value;
+    
+    // Filter transactions by date range
+    let filteredTransactions = transactions;
+    let dateRangeText = 'All Time';
+    
+    if (fromDateInput || toDateInput) {
+        filteredTransactions = transactions.filter(t => {
+            const transDate = new Date(t.date + 'T00:00:00');
+            
+            let fromMatch = true;
+            let toMatch = true;
+            
+            if (fromDateInput) {
+                const fromDate = new Date(fromDateInput + 'T00:00:00');
+                fromMatch = transDate >= fromDate;
+            }
+            
+            if (toDateInput) {
+                const toDate = new Date(toDateInput + 'T00:00:00');
+                toDate.setHours(23, 59, 59, 999);
+                toMatch = transDate <= toDate;
+            }
+            
+            return fromMatch && toMatch;
+        });
+        
+        if (fromDateInput && toDateInput) {
+            dateRangeText = `${formatDate(fromDateInput)} - ${formatDate(toDateInput)}`;
+        } else if (fromDateInput) {
+            dateRangeText = `From ${formatDate(fromDateInput)}`;
+        } else if (toDateInput) {
+            dateRangeText = `To ${formatDate(toDateInput)}`;
+        }
+    }
+    
+    if (filteredTransactions.length === 0) {
+        alert('⚠️ No transactions found for the selected date range.');
+        return;
+    }
+    
+    const incomeTotal = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    const expenseTotal = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
     
     // Calculate category breakdown
     const categories = {};
-    transactions.forEach(t => {
+    filteredTransactions.forEach(t => {
         if (!categories[t.category]) categories[t.category] = { income: 0, expense: 0 };
         if (t.type === 'income') categories[t.category].income += t.amount;
         else categories[t.category].expense += t.amount;
@@ -266,25 +308,29 @@ function showPreview() {
         categoryHTML += `
             <div class="category-item">
                 <span>${cat}</span>
-                <span class="net-amount ${net >= 0 ? 'income' : 'expense'}">₹${net.toFixed(2)}</span>
+                <span class="net-amount ${net >= 0 ? 'income' : 'expense'}">Rs. ${net.toFixed(2)}</span>
             </div>
         `;
     }
     categoryHTML += '</div>';
     
     document.getElementById('previewContent').innerHTML = `
+        <div class="preview-header" style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+            <h3 style="margin: 0; color: #667eea;">📅 Period: ${dateRangeText}</h3>
+            <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9rem;">${filteredTransactions.length} transactions</p>
+        </div>
         <div class="preview-summary">
             <div class="summary-row">
                 <span>Total Income:</span>
-                <span class="income">₹${incomeTotal.toFixed(2)}</span>
+                <span class="income">Rs. ${incomeTotal.toFixed(2)}</span>
             </div>
             <div class="summary-row">
                 <span>Total Expenses:</span>
-                <span class="expense">₹${expenseTotal.toFixed(2)}</span>
+                <span class="expense">Rs. ${expenseTotal.toFixed(2)}</span>
             </div>
             <div class="summary-row total">
                 <span>Net Profit:</span>
-                <span class="${(incomeTotal - expenseTotal) >= 0 ? 'income' : 'expense'}">₹${(incomeTotal - expenseTotal).toFixed(2)}</span>
+                <span class="${(incomeTotal - expenseTotal) >= 0 ? 'income' : 'expense'}">Rs. ${(incomeTotal - expenseTotal).toFixed(2)}</span>
             </div>
         </div>
         <h3>Category Breakdown</h3>
@@ -473,7 +519,6 @@ function generatePDFReport() {
         filteredTransactions = transactions.filter(t => {
             // Convert transaction date to comparable format
             const transDate = new Date(t.date + 'T00:00:00');
-            const transDateStr = t.date; // YYYY-MM-DD format
             
             let fromMatch = true;
             let toMatch = true;
@@ -524,19 +569,19 @@ function generatePDFReport() {
     doc.setFontSize(10);
     doc.text(`Period: ${dateRangeText}`, 105, 34, { align: 'center' });
     
-    // Summary
+    // Summary - FIXED: Use "Rs." instead of "₹" to avoid encoding issues
     doc.setFontSize(12);
-    doc.text(`Total Credit: ₹${totalIncome.toFixed(2)}`, 14, 45);
-    doc.text(`Total Debit: ₹${totalExpenses.toFixed(2)}`, 80, 45);
-    doc.text(`Net Balance: ₹${netBalance.toFixed(2)}`, 150, 45);
+    doc.text(`Total Credit: Rs. ${totalIncome.toFixed(2)}`, 14, 45);
+    doc.text(`Total Debit: Rs. ${totalExpenses.toFixed(2)}`, 80, 45);
+    doc.text(`Net Balance: Rs. ${netBalance.toFixed(2)}`, 150, 45);
     
     // Table
     const tableColumn = ["Date", "Category", "Credit (Income)", "Debit (Expense)", "Description"];
     const tableRows = filteredTransactions.map(t => [
         formatDate(t.date), // Use formatted date DD/MM/YYYY
         t.category,
-        t.type === 'income' ? `₹${t.amount.toFixed(2)}` : '-',
-        t.type === 'expense' ? `₹${t.amount.toFixed(2)}` : '-',
+        t.type === 'income' ? `Rs. ${t.amount.toFixed(2)}` : '-',  // FIXED: Use "Rs." instead of "₹"
+        t.type === 'expense' ? `Rs. ${t.amount.toFixed(2)}` : '-', // FIXED: Use "Rs." instead of "₹"
         t.description
     ]);
     
