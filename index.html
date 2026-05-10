@@ -12,15 +12,21 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
+        <!-- Header with Custom Logo -->
         <header class="header">
             <div class="logo-container">
-                <div class="logo-icon">
-                    <i class="fas fa-cut"></i>
-                </div>
-                <div class="logo-text">
-                    <span class="gradient-text">Stitches by </span>
-                    <span class="gold-s">S</span>
+                <!-- Custom Logo Image -->
+                <img src="logo.png" alt="Stitches by S Logo" class="main-logo" onerror="this.style.display='none'; document.querySelector('.logo-fallback').style.display='flex';">
+                
+                <!-- Fallback text logo if image fails to load -->
+                <div class="logo-fallback" style="display: none;">
+                    <div class="logo-icon">
+                        <i class="fas fa-cut"></i>
+                    </div>
+                    <div class="logo-text">
+                        <span class="gradient-text">Stitches by </span>
+                        <span class="gold-s">S</span>
+                    </div>
                 </div>
             </div>
             <p class="subtitle">Professional Income & Expense Tracker for Tailoring Business</p>
@@ -157,7 +163,7 @@
 
         <!-- Footer -->
         <footer class="app-footer">
-            Powered by @IAC
+            Powered by iniyan.talkies
         </footer>
     </div>
 
