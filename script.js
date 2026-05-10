@@ -10,14 +10,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Check authentication
 function checkAuth() {
-    // For demo, we'll use a simple email input
-    // In production, implement Firebase Auth
-    const email = prompt("Enter your email (e.g., callpavithra52@gmail.com):");
-    if (email) {
-        userEmail = email;
+    const email = prompt("Enter your email to access your data:\n(e.g., callpavithra52@gmail.com)", "callpavithra52@gmail.com");
+    
+    if (email && email.trim() !== '') {
+        userEmail = email.trim();
+        console.log('✅ User authenticated:', userEmail);
         loadTransactions();
     } else {
         updateSyncStatus('❌ Authentication required', 'error');
+        alert('Please enter your email to access your data.');
+        checkAuth();
     }
 }
 
@@ -48,7 +50,7 @@ async function addTransaction(e) {
         amount: parseFloat(document.getElementById('amount').value),
         category: document.getElementById('category').value,
         date: document.getElementById('date').value,
-        description: document.getElementById('description').value,
+        description: document.getElementById('description').value.trim(),
         createdAt: new Date().toISOString()
     };
     
@@ -62,28 +64,65 @@ async function addTransaction(e) {
         updateSyncStatus('✅ Transaction added!', 'synced');
         setTimeout(() => updateSyncStatus('✅ Live synced', 'synced'), 2000);
     } catch (err) {
-        console.error('Error:', err);
-        updateSyncStatus('❌ Error saving', 'error');
+        console.error('Error adding transaction:', err);
+        updateSyncStatus('❌ Error: ' + err.message, 'error');
+        alert('Failed to save transaction. Check console for details.');
     }
 }
 
-// Load transactions
+// ✅ FIXED: Load transactions - Sort in JavaScript to avoid Firestore index requirement
 async function loadTransactions() {
     updateSyncStatus('🔄 Loading...', '');
+    console.log('Loading transactions for user:', userEmail);
     
     try {
+        if (!userEmail) {
+            console.error('❌ userEmail is not set!');
+            updateSyncStatus('❌ User email not set', 'error');
+            return;
+        }
+        
+        console.log('🔍 Querying Firestore for userEmail:', userEmail);
+        
+        // Query without orderBy to avoid composite index requirement
+        // We'll sort in JavaScript instead
         const snapshot = await db.collection('transactions')
             .where('userEmail', '==', userEmail)
-            .orderBy('date', 'desc')
             .get();
         
-        transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderTransactions();
-        updateSummary();
-        updateSyncStatus('✅ Live synced', 'synced');
+        console.log(`📊 Found ${snapshot.size} transactions`);
+        
+        // Map docs to transaction objects
+        transactions = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return { id: doc.id, ...data };
+        });
+        
+        // Sort by date descending in JavaScript
+        transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        console.log('✅ Transactions loaded and sorted:', transactions.length);
+        
+        if (transactions.length === 0) {
+            console.log('⚠️ No transactions found for this user');
+            updateSyncStatus('⚠️ No transactions found', 'error');
+        } else {
+            renderTransactions();
+            updateSummary();
+            updateSyncStatus('✅ Live synced', 'synced');
+        }
+        
     } catch (err) {
-        console.error('Error loading:', err);
-        updateSyncStatus('❌ Sync error', 'error');
+        console.error('❌ Error loading transactions:', err);
+        
+        // Check for index requirement error
+        if (err.message && err.message.includes('index')) {
+            updateSyncStatus('⚠️ Index required - check console for link', 'error');
+            console.log('🔗 Create index here:', err.message);
+            alert('Firestore requires an index for this query. Check the console for a link to create it automatically.');
+        } else {
+            updateSyncStatus('❌ Sync error: ' + err.message, 'error');
+        }
     }
 }
 
@@ -120,6 +159,7 @@ async function deleteTransaction(id) {
         updateSyncStatus('🗑️ Deleting...', '');
         await db.collection('transactions').doc(id).delete();
         
+        // Update local array immediately
         transactions = transactions.filter(t => t.id !== id);
         renderTransactions();
         updateSummary();
@@ -127,8 +167,9 @@ async function deleteTransaction(id) {
         updateSyncStatus('✅ Deleted!', 'synced');
         setTimeout(() => updateSyncStatus('✅ Live synced', 'synced'), 2000);
     } catch (err) {
-        console.error('Error:', err);
+        console.error('Error deleting:', err);
         updateSyncStatus('❌ Delete failed', 'error');
+        alert('Failed to delete transaction.');
     }
 }
 
@@ -250,8 +291,9 @@ async function clearAllData() {
         
         updateSyncStatus('✅ All data cleared', 'synced');
     } catch (err) {
-        console.error('Error:', err);
+        console.error('Error clearing:', err);
         updateSyncStatus('❌ Clear failed', 'error');
+        alert('Failed to clear data.');
     }
 }
 
